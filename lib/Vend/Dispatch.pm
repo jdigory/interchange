@@ -1417,6 +1417,35 @@ EOF
 
 #::logDebug("session name='$Vend::SessionName'\n");
 
+	my $prot = $Vend::Cfg->{SecureProtect};
+
+	if($CGI::secure and is_yes($prot->{active}) and $Vend::username) {
+#::logDebug("in SecureProtect, active=$prot->{active}, cookie=$prot->{cookie_name}");
+	    my $cook = Vend::Util::read_cookie($prot->{cookie_name});
+		my $match;
+		if($cook) {
+			my @keys = grep /\w/, split /[\0,\s]+/, $prot->{keys};
+			my $check = generate_key(join "", $prot->{secret}, @{$Vend::Session}{@keys});
+#::logDebug("cookie $prot->{cookie_name} value of $cook vs $check");
+			$match = $check eq $cook;
+		}
+		unless($match) {
+			::logError("failed SecureProtect, de-authenticating");
+			Vend::Tags->error({ name => 'SecureProtect', set => "failed, de-authenticating"});
+			$CGI::values{mv_nextpage} = $prot->{page};
+			no strict 'refs';
+			for(qw/ admin username login_table logged_in/) {
+				undef ${"Vend::$_"};
+				undef $Vend::Session->{$_};
+			}
+			$CGI::values{$prot->{destination}} ||= $CGI::path_info;
+			$CGI::path_info = $prot->{page};
+		}
+		else {
+#::logDebug("cookie $prot->{cookie_name} value of $cook matched.");
+		}
+	}
+
 	$Vend::Calc_initialized = 0;
 	$CGI::values{mv_session_id} = $Vend::Session->{id} = $Vend::SessionID;
 

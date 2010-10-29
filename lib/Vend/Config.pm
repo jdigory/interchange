@@ -548,6 +548,15 @@ sub catalog_directives {
 	['VarName',          'varname',           ''],
 	['Limit',			 'hash',    'option_list 5000 chained_cost_levels 32 robot_expire 1'],
 	['ScratchDefault',	 'hash',     	 	 ''],
+	['SecureProtect',    'hash',     	 	 qq{
+													active		0
+													page		login
+													secret		ChangeMe
+													keys		username,login_table,passhash
+													cookie_name	MV_SHASH
+													destination	destination
+													authexpire  7d
+												}],
 	['Profile',			 'locale',     	 	 ''],
 	['ValuesDefault',	 'hash',     	 	 ''],
 	['ProductFiles',	 'array_complete',  'products'],

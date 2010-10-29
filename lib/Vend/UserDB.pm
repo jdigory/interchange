@@ -1333,19 +1333,22 @@ sub login {
 				die $stock_error, "\n";
 			}
 			$pw = $self->{PASSWORD};
+			my $crypted;
 			if($self->{CRYPT}) {
 				if($self->{OPTIONS}{md5}) {
-					$self->{PASSWORD} = generate_key($pw);
+					$crypted = $self->{PASSWORD} = generate_key($pw);
 				}
 				else {
-					$self->{PASSWORD} = crypt($pw, $db_pass);
+					$crypted = $self->{PASSWORD} = crypt($pw, $db_pass);
 				}
 			}
+
 			unless ($self->{PASSWORD} eq $db_pass) {
 				$self->log_either(errmsg("Denied attempted login by user '%s' with incorrect password",
 					$self->{USERNAME}));
 				die $stock_error, "\n";
 			}
+			$Vend::Session->{passhash} = generate_key($crypted);
 			$self->log_either(errmsg("Successful login by user '%s'", $self->{USERNAME}));
 		}
 
@@ -1428,6 +1431,15 @@ sub login {
 
 	$Vend::login_table = $Vend::Session->{login_table} = $self->{DB_ID};
 	$Vend::username = $Vend::Session->{username} = $self->{USERNAME};
+	if(is_yes($Vend::Cfg->{SecureProtect}{active})) {
+		my $prot = $Vend::Cfg->{SecureProtect};
+		my $cname = $prot->{cookie_name};
+		my @keys = grep /\w/, split /[\s,\0]/, $prot->{keys};
+		#$self->log("setting SecureProtect cookie $cname with keys: " . join(",", @keys));
+		my $check = generate_key(join "", $prot->{secret}, @{$Vend::Session}{@keys});
+		my $expire = $prot->{authexpire} || '7d';
+		Vend::Util::set_cookie($cname, $check, $expire, undef, undef, 1);
+	}
 	$Vend::Session->{logged_in} = 1;
 
 	if (my $macros = $self->{OPTIONS}{postlogin_action}) {
