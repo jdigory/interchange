@@ -292,7 +292,7 @@ COMPILE: {
 
 	unlink $Intermediate if $Force;
 
-	do "./src/syscfg";
+	do "./syscfg";
 	if(! -f $vlink_file) {
 		system "$CC $CFLAGS $DEFS $LIBS vlink.c -o $vlink_file";
 		if($?) {
